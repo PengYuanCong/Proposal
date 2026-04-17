@@ -1,0 +1,125 @@
+﻿@{
+    ViewData["Title"] = "遊戲基地首頁";
+}
+
+<style>
+    /* 橫幅容器 */
+    .hero-banner {
+        position: relative;
+        width: 100%;
+        height: 550px; /* 稍微加高一點 */
+        background: url('/images/守岸.jpg') no-repeat center center;
+        background-size: cover;
+        display: flex;
+        /* 改為 flex-end 並加 padding，讓搜尋欄往圖片下方移動 */
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 80px; /* 距離底部 80px */
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    /* 遮罩，讓文字跟搜尋框更明顯 */
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    /* 搜尋區域 */
+    .search-container {
+        position: relative;
+        z-index: 2;
+        width: 80%;
+        max-width: 700px;
+        text-align: center;
+        /* 背景加一點點模糊遮罩，增加文字辨識度 */
+        background: rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        border-radius: 20px;
+        backdrop-filter: blur(3px);
+    }
+
+    .main-search-input {
+        height: 60px;
+        border-radius: 30px 0 0 30px !important;
+        font-size: 1.2rem;
+        padding-left: 25px;
+        border: none;
+    }
+
+    .btn-search {
+        border-radius: 0 30px 30px 0 !important;
+        width: 100px;
+        background-color: #007bff;
+        border: none;
+    }
+
+    /* 功能按鈕組 */
+    .feature-buttons {
+        margin-top: 20px;
+    }
+
+    .btn-media {
+        border-radius: 20px;
+        margin: 5px;
+        backdrop-filter: blur(5px);
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+        .btn-media:hover {
+            background: rgba(0, 123, 255, 0.8);
+            color: white;
+        }
+</style>
+
+<div class="container mt-4">
+    <div class="hero-banner">
+        <div class="hero-overlay"></div>
+        
+        <div class="search-container">
+            <h1 class="text-white mb-4" style="font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">探索你的裝備庫</h1>
+            
+            <form action="/Equipment/Search" method="get">
+                <div class="input-group mb-3">
+                    <input type="text" name="query" class="form-control main-search-input" placeholder="搜尋遊戲裝備名稱..." aria-label="Search">
+                    <button class="btn btn-primary btn-search" type="submit">
+                        <i class="bi bi-search"></i> 搜尋
+                    </button>
+                </div>
+            </form>
+
+            
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">匯入遊戲影音</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="file" class="form-control mb-3">
+                <input type="text" class="form-control" placeholder="或貼上 YouTube 網址">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary">確認匯入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openVideoUpload() {
+        var myModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+        myModal.show();
+    }
+</script>

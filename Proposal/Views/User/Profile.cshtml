@@ -1,0 +1,99 @@
+﻿@model IEnumerable<Proposal.Models.CalculationHistory>
+
+
+
+@{
+    ViewData["Title"] = "會員紀錄";
+}
+
+
+<div class="col-md-4 mb-4">
+    <div class="card bg-dark border-secondary shadow h-100">
+        <div class="card-body text-center py-4">
+                    
+            <img src="/avatars/@(ViewBag.Username).jpg?v=@DateTime.Now.Ticks"
+                 onerror="this.src='https://github.com/mdo.png'"
+                 class="rounded-circle border border-secondary shadow-sm mb-3"
+                 width="150" height="150" style="object-fit: cover;">
+                    
+            <h3 class="mt-2 text-white fw-bold">@ViewBag.Username</h3>
+            <p class="text-success"><i class="bi bi-check-circle-fill me-1"></i>已驗證會員</p>
+                    
+            <hr class="border-secondary">
+                    
+            <form asp-action="UploadAvatar" method="post" enctype="multipart/form-data" class="mt-3">
+                <div class="mb-2">
+                    <input class="form-control form-control-sm text-bg-dark border-secondary" type="file" name="avatarFile" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-info w-100">
+                    <i class="bi bi-cloud-upload me-1"></i> 上傳新大頭貼
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<div class="card bg-dark text-white border-secondary shadow">
+    <div class="card-header border-secondary bg-opacity-25 bg-secondary">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>最近計算紀錄</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr class="text-info">
+                        <th>時間</th>
+                        <th>公式</th>
+                        <th>輸入數值</th>
+                        <th>計算結果</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            // 💡 幫公式加上專屬顏色 (利用 Bootstrap 的 badge class)
+                            string badgeColor = "bg-secondary"; // 預設顏色
+
+                            if (item.FormulaType != null)
+                            {
+                                if (item.FormulaType.Contains("CP值"))
+                                {
+                                    badgeColor = "bg-warning text-dark"; // CP值用黃色
+                                }
+                                else if (item.FormulaType.Contains("減傷"))
+                                {
+                                    badgeColor = "bg-info text-dark";    // 減傷用藍色
+                                }
+                                else if (item.FormulaType.Contains("EHP"))
+                                {
+                                    badgeColor = "bg-danger text-white"; // EHP用紅色
+                                }
+                            }
+
+                            <tr>
+                                <td class="small text-secondary">@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                <td><span class="badge @badgeColor">@item.FormulaType</span></td>
+                                <td class="small">@item.InputDetails</td>
+                                <td class="fw-bold text-success">@item.ResultContent</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary py-4">
+                                <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                                目前還沒有任何計算紀錄喔！
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+    </div>
+</div>
