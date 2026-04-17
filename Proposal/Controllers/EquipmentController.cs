@@ -352,6 +352,8 @@ namespace Proposal.Controllers // 這裡用你的 Proposal
         }
 
 
+
+
         // 讓前端可以透過 ID 抓取特定裝備的數值
         [HttpGet]
         public IActionResult GetEquipmentDetails(int id)
@@ -424,6 +426,58 @@ namespace Proposal.Controllers // 這裡用你的 Proposal
             }
             return Json(new { success = true, message = "組合儲存成功！" });
         }
+
+
+
+        [HttpGet]
+        public IActionResult Search(string query)
+        {
+            // 如果沒有輸入任何關鍵字，直接導回首頁
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            List<Equipment> searchResults = new List<Equipment>();
+            string connString = _config.GetConnectionString("DefaultConnection");
+
+            using (SqlConnection cn = new SqlConnection(connString))
+            {
+                cn.Open();
+                // 模糊搜尋名稱或包含該關鍵字的裝備，同樣要確保 Username 隔離
+                string sql = "SELECT * FROM Equipments WHERE Name LIKE @q AND Username = @User";
+
+                using (SqlCommand cmd = new SqlCommand(sql, cn))
+                {
+                    cmd.Parameters.AddWithValue("@q", "%" + query + "%");
+                    cmd.Parameters.AddWithValue("@User", User.Identity.Name);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            searchResults.Add(new Equipment
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Name = reader["Name"].ToString(),
+                                HP = Convert.ToInt32(reader["HP"]),
+                                Attack = Convert.ToInt32(reader["Attack"]),
+                                MagicAttack = Convert.ToInt32(reader["MagicAttack"]),
+                                PhysicalDefense = Convert.ToInt32(reader["PhysicalDefense"]),
+                                MagicDefense = Convert.ToInt32(reader["MagicDefense"]),
+                                Price = Convert.ToInt32(reader["Price"])
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 將搜尋關鍵字帶到 View，方便顯示「您搜尋的是：XXX」
+            ViewData["SearchTerm"] = query;
+            return View(searchResults);
+        }
+
+
 
         // 取得特定組合的總數值 (用於計算公式)
         [HttpGet]
