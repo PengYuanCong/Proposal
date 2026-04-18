@@ -66,22 +66,21 @@ namespace Proposal.Controllers
             using (SqlConnection cn = new SqlConnection(connString))
             {
                 cn.Open();
-                // 使用 CROSS APPLY 一次加總六件裝備的數值
                 string sql = @"
-                    SELECT 
-                        SUM(e.HP) as TotalHP, 
-                        SUM(e.Attack) as TotalAttack, 
-                        SUM(e.MagicAttack) as TotalMagicAttack,
-                        SUM(e.PhysicalDefense) as TotalPD,
-                        SUM(e.MagicDefense) as TotalMD,
-                        SUM(e.Price) as TotalPrice
-                    FROM Loadouts l
-                    CROSS APPLY (
-                        SELECT HP, Attack, MagicAttack, PhysicalDefense, MagicDefense, Price 
-                        FROM Equipments 
-                        WHERE Id IN (l.Eq1_Id, l.Eq2_Id, l.Eq3_Id, l.Eq4_Id, l.Eq5_Id, l.Eq6_Id)
-                    ) e
-                    WHERE l.Id = @LId AND l.Username = @User";
+            SELECT 
+                SUM(e.HP) as TotalHP, 
+                SUM(e.Attack) as TotalAtk, 
+                SUM(e.MagicAttack) as TotalMAtk,
+                SUM(e.PhysicalDefense) as TotalPDef,
+                SUM(e.MagicDefense) as TotalMDef,
+                SUM(e.Price) as TotalPrice
+            FROM Loadouts l
+            CROSS APPLY (
+                SELECT HP, Attack, MagicAttack, PhysicalDefense, MagicDefense, Price 
+                FROM Equipments 
+                WHERE Id IN (l.Eq1_Id, l.Eq2_Id, l.Eq3_Id, l.Eq4_Id, l.Eq5_Id, l.Eq6_Id)
+            ) e
+            WHERE l.Id = @LId AND l.Username = @User";
 
                 using (SqlCommand cmd = new SqlCommand(sql, cn))
                 {
@@ -93,12 +92,12 @@ namespace Proposal.Controllers
                         {
                             return Json(new
                             {
-                                hp = dr["TotalHP"] == DBNull.Value ? 0 : dr["TotalHP"],
-                                attack = dr["TotalAttack"] == DBNull.Value ? 0 : dr["TotalAttack"],
-                                magicAttack = dr["TotalMagicAttack"] == DBNull.Value ? 0 : dr["TotalMagicAttack"],
-                                pDef = dr["TotalPD"] == DBNull.Value ? 0 : dr["TotalPD"],
-                                mDef = dr["TotalMD"] == DBNull.Value ? 0 : dr["TotalMD"],
-                                price = dr["TotalPrice"] == DBNull.Value ? 0 : dr["TotalPrice"]
+                                hp = dr["TotalHP"] ?? 0,
+                                attack = dr["TotalAtk"] ?? 0,
+                                magicAttack = dr["TotalMAtk"] ?? 0,
+                                pDef = dr["TotalPDef"] ?? 0,
+                                mDef = dr["TotalMDef"] ?? 0,
+                                price = dr["TotalPrice"] ?? 0
                             });
                         }
                     }

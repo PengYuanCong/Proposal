@@ -59,125 +59,177 @@
     <i class="bi bi-play-circle-fill me-2"></i>開始計算
 </button>
 
-<div id="resultArea" class="p-4 text-center rounded shadow d-none" style="border: 1px solid #20c997; background-color: rgba(32, 201, 151, 0.1);">
-    <h5 class="text-success mb-3"><i class="bi bi-check-circle-fill me-2"></i>計算結果</h5>
-    <h2 id="resultValue" class="text-white fw-bold mb-0" style="letter-spacing: 1px;">--</h2>
+<div class="row g-4 d-none" id="displayArea">
+    <div class="col-md-5">
+        <div id="resultArea" class="p-4 text-center rounded shadow h-100 d-flex flex-column justify-content-center" style="border: 1px solid #20c997; background-color: rgba(32, 201, 151, 0.1);">
+            <h5 class="text-success mb-3"><i class="bi bi-check-circle-fill me-2"></i>計算結果</h5>
+            <h2 id="resultValue" class="text-white fw-bold mb-0" style="letter-spacing: 1px;">--</h2>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card bg-dark border-secondary shadow p-3 h-100">
+            <h6 class="text-info mb-3 text-center"><i class="bi bi-graph-up me-2"></i>屬性分佈雷達圖</h6>
+            <div style="max-height: 300px; position: relative;">
+                <canvas id="attributeChart"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
-        // ======= A. 切換公式 (保持原樣) =======
+        let myRadarChart = null; // 紀錄圖表實體
+
         function changeInputs() {
-            var type = document.getElementById("formulaType").value;
-            var container = document.getElementById("input-fields");
-            var btn = document.getElementById("btnCalculate");
-            var resultArea = document.getElementById("resultArea");
+        var type = document.getElementById("formulaType").value;
+        var container = document.getElementById("input-fields");
+        var btn = document.getElementById("btnCalculate");
+        var displayArea = document.getElementById("displayArea");
             
-            container.innerHTML = "";
-            resultArea.classList.add('d-none');
-            btn.style.display = type === "" ? "none" : "block";
+        container.innerHTML = "";
+        displayArea.classList.add('d-none'); // 隱藏結果區
+        btn.style.display = type === "" ? "none" : "block";
 
-            if (type === "cp") {
-                container.innerHTML = `
-                    <div class="mb-3"><label class="form-label text-light">屬性總價值</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param1" required></div>
-                    <div class="mb-3"><label class="form-label text-warning">💰 裝備總價格</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param2" required></div>`;
-            } else if (type === "dr") {
-                container.innerHTML = `
-                    <div class="row">
-                        <div class="col-6 mb-3"><label class="form-label" style="color: #6ea8fe;">🛡️ 物理防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param1" required></div>
-                        <div class="col-6 mb-3"><label class="form-label text-info">✨ 魔法防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param2" required></div>
-                    </div>`;
-            } else if (type === "ehp") {
-                container.innerHTML = `
-                    <div class="mb-3"><label class="form-label text-danger">❤️ 基礎生命值 (HP)</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param1" required></div>
-                    <div class="row">
-                        <div class="col-6 mb-3"><label class="form-label" style="color: #6ea8fe;">🛡️ 物理防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param2" required></div>
-                        <div class="col-6 mb-3"><label class="form-label text-info">✨ 魔法防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param3" required></div>
-                    </div>`;
-            } else {
-                container.innerHTML = `<div class="text-center text-secondary mt-3"><i class="bi bi-arrow-up-circle fs-3 d-block mb-2"></i>請先從上方選擇要計算的公式</div>`;
-            }
+        if (type === "cp") {
+        container.innerHTML = `
+        <div class="mb-3"><label class="form-label text-light">屬性總價值</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param1" required></div>
+        <div class="mb-3"><label class="form-label text-warning">💰 裝備總價格</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param2" required></div>`;
+        } else if (type === "dr") {
+        container.innerHTML = `
+        <div class="row">
+        <div class="col-6 mb-3"><label class="form-label" style="color: #6ea8fe;">🛡️ 物理防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param1" required></div>
+        <div class="col-6 mb-3"><label class="form-label text-info">✨ 魔法防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param2" required></div>
+        </div>`;
+        } else if (type === "ehp") {
+        container.innerHTML = `
+        <div class="mb-3"><label class="form-label text-danger">❤️ 基礎生命值 (HP)</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param1" required></div>
+        <div class="row">
+        <div class="col-6 mb-3"><label class="form-label" style="color: #6ea8fe;">🛡️ 物理防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param2" required></div>
+        <div class="col-6 mb-3"><label class="form-label text-info">✨ 魔法防禦</label><input type="number" step="0.01" class="form-control text-bg-dark border-secondary" id="input_param3" required></div>
+        </div>`;
+        } else {
+        container.innerHTML = `<div class="text-center text-secondary mt-3"><i class="bi bi-arrow-up-circle fs-3 d-block mb-2"></i>請先從上方選擇要計算的公式</div>`;
+        }
         }
 
-        // ======= B. 帶入資料 (邏輯分流：單件 vs 組合) =======
+        // 繪製雷達圖函式
+        function updateRadarChart(stats) {
+        const ctx = document.getElementById('attributeChart').getContext('2d');
+        if (myRadarChart) { myRadarChart.destroy(); }
+
+        myRadarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+        labels: ['生命值', '物理攻擊', '魔法攻擊', '物理防禦', '魔法防禦'],
+        datasets: [{
+        label: '屬性分佈',
+        data: [stats.hp, stats.attack, stats.magicAttack, stats.pDef, stats.mDef],
+        backgroundColor: 'rgba(13, 202, 240, 0.2)',
+        borderColor: '#0dcaf0',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff'
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+        r: {
+        angleLines: { color: 'rgba(255,255,255,0.1)' },
+        grid: { color: 'rgba(255,255,255,0.1)' },
+        pointLabels: { color: '#aaa', font: { size: 12 } },
+        ticks: { display: false, count: 5 }
+        }
+        },
+        plugins: { legend: { display: false } }
+        }
+        });
+        }
+
         function handleDataLoading() {
-            const formulaType = document.getElementById("formulaType").value;
-            const eqId = document.getElementById('equipmentSelector').value;
-            const loadoutId = document.getElementById('loadoutSelector').value;
+        const formulaType = document.getElementById("formulaType").value;
+        const eqId = document.getElementById('equipmentSelector').value;
+        const loadoutId = document.getElementById('loadoutSelector').value;
             
-            if (!formulaType) { alert('請先選擇左方的「計算公式」！'); return; }
-            if (!eqId && !loadoutId) { alert('請從「單件」或「組合」中擇一選取！'); return; }
+        if (!formulaType) { alert('請先選擇左方的「計算公式」！'); return; }
+        if (!eqId && !loadoutId) { alert('請從「單件」或「組合」中擇一選取！'); return; }
 
-            const btn = document.getElementById('btnLoadData');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-            btn.disabled = true;
+        const btn = document.getElementById('btnLoadData');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btn.disabled = true;
 
-            // 判斷請求網址 (如果有選組合，優先抓組合)
-            let fetchUrl = loadoutId ? `/Calculator/GetLoadoutStats?loadoutId=${loadoutId}` : `/Equipment/GetEquipmentDetails/${eqId}`;
+        let fetchUrl = loadoutId ? `/Equipment/GetLoadoutStats?loadoutId=${loadoutId}` : `/Equipment/GetEquipmentDetails/${eqId}`;
 
-            fetch(fetchUrl)
-                .then(res => res.json())
-                .then(data => {
-                    if (data) {
-                        // 統一處理資料名稱 (單件 API 回傳 physicalDefense, 組合 API 回傳 pDef)
-                        const hp = data.hp;
-                        const pDef = data.physicalDefense || data.pDef;
-                        const mDef = data.magicDefense || data.mDef;
-                        const atk = data.attack;
-                        const mAtk = data.magicAttack;
-                        const price = data.price;
+        fetch(fetchUrl)
+        .then(res => res.json())
+        .then(data => {
+        if (data) {
+        const stats = {
+        hp: data.hp || 0,
+        attack: data.attack || 0,
+        magicAttack: data.magicAttack || 0,
+        pDef: data.physicalDefense || data.pDef || 0,
+        mDef: data.magicDefense || data.mDef || 0,
+        price: data.price || 0
+        };
 
-                        if (formulaType === "cp") {
-                            document.getElementById('input_param1').value = hp + atk + mAtk + pDef + mDef;
-                            document.getElementById('input_param2').value = price;
-                        } else if (formulaType === "dr") {
-                            document.getElementById('input_param1').value = pDef;
-                            document.getElementById('input_param2').value = mDef;
-                        } else if (formulaType === "ehp") {
-                            document.getElementById('input_param1').value = hp;
-                            document.getElementById('input_param2').value = pDef;
-                            document.getElementById('input_param3').value = mDef;
-                        }
-                    }
-                })
-                .catch(err => console.error(err))
-                .finally(() => { btn.innerHTML = originalText; btn.disabled = false; });
+        // 填入輸入框
+        if (formulaType === "cp") {
+        document.getElementById('input_param1').value = stats.hp + stats.attack + stats.magicAttack + stats.pDef + stats.mDef;
+        document.getElementById('input_param2').value = stats.price;
+        } else if (formulaType === "dr") {
+        document.getElementById('input_param1').value = stats.pDef;
+        document.getElementById('input_param2').value = stats.mDef;
+        } else if (formulaType === "ehp") {
+        document.getElementById('input_param1').value = stats.hp;
+        document.getElementById('input_param2').value = stats.pDef;
+        document.getElementById('input_param3').value = stats.mDef;
+        }
+                        
+        // 更新雷達圖並顯示區域
+        document.getElementById('displayArea').classList.remove('d-none');
+        updateRadarChart(stats);
+        }
+        })
+        .catch(err => console.error(err))
+        .finally(() => { btn.innerHTML = originalText; btn.disabled = false; });
         }
 
-        // ======= C. 執行計算與自動存檔 (保持原樣) =======
         document.getElementById('btnCalculate').addEventListener('click', function() {
-            const type = document.getElementById("formulaType").value;
-            const typeText = document.getElementById("formulaType").options[document.getElementById("formulaType").selectedIndex].text;
+        const type = document.getElementById("formulaType").value;
+        const typeText = document.getElementById("formulaType").options[document.getElementById("formulaType").selectedIndex].text;
             
-            const p1 = parseFloat(document.getElementById('input_param1')?.value) || 0;
-            const p2 = parseFloat(document.getElementById('input_param2')?.value) || 0;
-            const p3 = parseFloat(document.getElementById('input_param3')?.value) || 0;
+        const p1 = parseFloat(document.getElementById('input_param1')?.value) || 0;
+        const p2 = parseFloat(document.getElementById('input_param2')?.value) || 0;
+        const p3 = parseFloat(document.getElementById('input_param3')?.value) || 0;
 
-            let result = "";
-            if (type === "cp") {
-                if(p2 === 0) { alert("裝備價格不能為 0！"); return; }
-                result = `CP 值：${(p1 / p2).toFixed(2)}`;
-            } else if (type === "dr") {
-                result = `物理減傷：${(p1 / (p1 + 100) * 100).toFixed(1)}% <br> 魔法減傷：${(p2 / (p2 + 100) * 100).toFixed(1)}%`;
-            } else if (type === "ehp") {
-                result = `面對物理傷害 EHP：${(p1 * (1 + p2 / 100)).toFixed(0)} <br> 面對魔法傷害 EHP：${(p1 * (1 + p3 / 100)).toFixed(0)}`;
-            }
+        let result = "";
+        if (type === "cp") {
+        if(p2 === 0) { alert("裝備價格不能為 0！"); return; }
+        result = `CP 值：${(p1 / p2).toFixed(2)}`;
+        } else if (type === "dr") {
+        result = `物理減傷：${(p1 / (p1 + 100) * 100).toFixed(1)}% <br> 魔法減傷：${(p2 / (p2 + 100) * 100).toFixed(1)}%`;
+        } else if (type === "ehp") {
+        result = `面對物理傷害 EHP：${(p1 * (1 + p2 / 100)).toFixed(0)} <br> 面對魔法傷害 EHP：${(p1 * (1 + p3 / 100)).toFixed(0)}`;
+        }
 
-            document.getElementById('resultValue').innerHTML = result;
-            document.getElementById('resultArea').classList.remove('d-none');
+        document.getElementById('resultValue').innerHTML = result;
+        document.getElementById('displayArea').classList.remove('d-none');
 
-            let inputsString = (type === "cp") ? `總價值: ${p1} , 價格: ${p2}` : (type === "dr") ? `物防: ${p1} , 魔防: ${p2}` : `HP: ${p1} , 物防: ${p2} , 魔防: ${p3}`;
+        let inputsString = (type === "cp") ? `總價值: ${p1} , 價格: ${p2}` : (type === "dr") ? `物防: ${p1} , 魔防: ${p2}` : `HP: ${p1} , 物防: ${p2} , 魔防: ${p3}`;
 
-            fetch('/Calculator/SaveRecord', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    'type': typeText,
-                    'inputs': inputsString,
-                    'result': result.replace('<br>', ' | ')
-                })
-            });
+        fetch('/Calculator/SaveRecord', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+        'type': typeText,
+        'inputs': inputsString,
+        'result': result.replace('<br>', ' | ')
+        })
+        });
         });
 
         window.onload = changeInputs;
