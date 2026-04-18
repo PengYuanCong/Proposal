@@ -21,5 +21,11 @@ namespace Proposal.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+
+        public IActionResult NotFoundPage()
+        {
+            return View(); // 你可以自定義一個漂亮的 Error404.cshtml
+        }
     }
 }
