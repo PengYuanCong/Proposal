@@ -484,20 +484,24 @@ namespace Proposal.Controllers // 這裡用你的 Proposal
         public IActionResult GetLoadoutStats(int loadoutId)
         {
             string connString = _config.GetConnectionString("DefaultConnection");
-            var stats = new { HP = 0, Attack = 0, Price = 0 };
 
             using (SqlConnection cn = new SqlConnection(connString))
             {
                 cn.Open();
-                // 這裡使用 JOIN 一次抓出六件裝備的數值總和
+                // 使用 CROSS APPLY 一次性計算出該組合內 6 個欄位對應裝備的總和
                 string sql = @"
             SELECT 
-                SUM(e.HP) as TotalHP, 
-                SUM(e.Attack) as TotalAttack, 
-                SUM(e.Price) as TotalPrice
+                ISNULL(SUM(e.HP), 0) as TotalHP, 
+                ISNULL(SUM(e.Attack), 0) as TotalAtk, 
+                ISNULL(SUM(e.MagicAttack), 0) as TotalMAtk,
+                ISNULL(SUM(e.PhysicalDefense), 0) as TotalPDef,
+                ISNULL(SUM(e.MagicDefense), 0) as TotalMDef,
+                ISNULL(SUM(e.Price), 0) as TotalPrice
             FROM Loadouts l
             CROSS APPLY (
-                SELECT HP, Attack, Price FROM Equipments WHERE Id IN (l.Eq1_Id, l.Eq2_Id, l.Eq3_Id, l.Eq4_Id, l.Eq5_Id, l.Eq6_Id)
+                SELECT HP, Attack, MagicAttack, PhysicalDefense, MagicDefense, Price 
+                FROM Equipments 
+                WHERE Id IN (l.Eq1_Id, l.Eq2_Id, l.Eq3_Id, l.Eq4_Id, l.Eq5_Id, l.Eq6_Id)
             ) e
             WHERE l.Id = @LId AND l.Username = @User";
 
@@ -511,9 +515,12 @@ namespace Proposal.Controllers // 這裡用你的 Proposal
                         {
                             return Json(new
                             {
-                                hp = dr["TotalHP"] == DBNull.Value ? 0 : dr["TotalHP"],
-                                attack = dr["TotalAttack"] == DBNull.Value ? 0 : dr["TotalAttack"],
-                                price = dr["TotalPrice"] == DBNull.Value ? 0 : dr["TotalPrice"]
+                                hp = dr["TotalHP"],
+                                attack = dr["TotalAtk"],
+                                magicAttack = dr["TotalMAtk"],
+                                pDef = dr["TotalPDef"],
+                                mDef = dr["TotalMDef"],
+                                price = dr["TotalPrice"]
                             });
                         }
                     }

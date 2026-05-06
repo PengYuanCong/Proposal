@@ -17,7 +17,9 @@
 
     <div class="col-md-8">
         <label class="form-label text-warning fw-bold"><i class="bi bi-lightning-fill me-1"></i>2. 懶得輸入？從裝備庫/組合快載</label>
-        <div class="input-group">
+        
+        <!-- 單件與基礎組合選擇 -->
+        <div class="input-group mb-2">
             <span class="input-group-text text-bg-dark border-secondary">單件</span>
             <select id="equipmentSelector" class="form-select text-bg-dark border-secondary">
                 <option value="">-- 選擇單件裝備 --</option>
@@ -32,7 +34,7 @@
             
             <span class="input-group-text text-bg-dark border-secondary">組合</span>
             <select id="loadoutSelector" class="form-select text-bg-dark border-secondary">
-                <option value="">-- 選擇裝備組合 --</option>
+                <option value="">-- 選擇基礎組合 --</option>
                 @if (ViewBag.LoadoutList != null)
                 {
                     foreach (var lo in (List<Proposal.Models.Loadout>)ViewBag.LoadoutList)
@@ -44,6 +46,24 @@
             
             <button type="button" id="btnLoadData" class="btn btn-warning fw-bold" onclick="handleDataLoading()">
                 <i class="bi bi-download"></i> 帶入
+            </button>
+        </div>
+
+        <!-- 新增：對比組合選擇 -->
+        <div class="input-group">
+            <span class="input-group-text text-bg-dark border-secondary">對比組合</span>
+            <select id="compareLoadoutSelector" class="form-select text-bg-dark border-secondary">
+                <option value="">-- 選擇要對比的組合 (選填) --</option>
+                @if (ViewBag.LoadoutList != null)
+                {
+                    foreach (var lo in (List<Proposal.Models.Loadout>)ViewBag.LoadoutList)
+                    {
+                        <option value="@lo.Id">@lo.LoadoutName</option>
+                    }
+                }
+            </select>
+            <button type="button" id="btnCompareData" class="btn btn-outline-info fw-bold" onclick="handleComparison()">
+                <i class="bi bi-intersect"></i> 開始對比
             </button>
         </div>
     </div>
@@ -114,23 +134,36 @@
         }
         }
 
-        // 繪製雷達圖函式
-        function updateRadarChart(stats) {
+        // 修改：繪製雷達圖函式 (支援雙數據集對比)
+        function updateRadarChart(baseStats, compareStats = null) {
         const ctx = document.getElementById('attributeChart').getContext('2d');
         if (myRadarChart) { myRadarChart.destroy(); }
+
+        const datasets = [{
+        label: '基礎組合/裝備',
+        data: [baseStats.hp, baseStats.attack, baseStats.magicAttack, baseStats.pDef, baseStats.mDef],
+        backgroundColor: 'rgba(13, 202, 240, 0.2)',
+        borderColor: '#0dcaf0',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff'
+        }];
+
+        if (compareStats) {
+        datasets.push({
+        label: '對比組合',
+        data: [compareStats.hp, compareStats.attack, compareStats.magicAttack, compareStats.pDef, compareStats.mDef],
+        backgroundColor: 'rgba(255, 193, 7, 0.2)', // 黃色對比色
+        borderColor: '#ffc107',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff'
+        });
+        }
 
         myRadarChart = new Chart(ctx, {
         type: 'radar',
         data: {
         labels: ['生命值', '物理攻擊', '魔法攻擊', '物理防禦', '魔法防禦'],
-        datasets: [{
-        label: '屬性分佈',
-        data: [stats.hp, stats.attack, stats.magicAttack, stats.pDef, stats.mDef],
-        backgroundColor: 'rgba(13, 202, 240, 0.2)',
-        borderColor: '#0dcaf0',
-        borderWidth: 2,
-        pointBackgroundColor: '#fff'
-        }]
+        datasets: datasets
         },
         options: {
         responsive: true,
@@ -143,7 +176,8 @@
         ticks: { display: false, count: 5 }
         }
         },
-        plugins: { legend: { display: false } }
+        // 如果有對比，顯示圖例讓玩家好分辨顏色
+        plugins: { legend: { display: compareStats !== null, labels: { color: '#fff' } } }
         }
         });
         }
@@ -154,7 +188,7 @@
         const loadoutId = document.getElementById('loadoutSelector').value;
             
         if (!formulaType) { alert('請先選擇左方的「計算公式」！'); return; }
-        if (!eqId && !loadoutId) { alert('請從「單件」或「組合」中擇一選取！'); return; }
+        if (!eqId && !loadoutId) { alert('請從「單件」或「基礎組合」中擇一選取！'); return; }
 
         const btn = document.getElementById('btnLoadData');
         const originalText = btn.innerHTML;
@@ -188,14 +222,61 @@
         document.getElementById('input_param2').value = stats.pDef;
         document.getElementById('input_param3').value = stats.mDef;
         }
-                        
-        // 更新雷達圖並顯示區域
+                    
+        // 更新雷達圖並顯示區域 (單筆數據)
         document.getElementById('displayArea').classList.remove('d-none');
         updateRadarChart(stats);
         }
         })
         .catch(err => console.error(err))
         .finally(() => { btn.innerHTML = originalText; btn.disabled = false; });
+        }
+
+        // 新增：處理對比邏輯的非同步函式
+        async function handleComparison() {
+        const baseId = document.getElementById('loadoutSelector').value;
+        const compareId = document.getElementById('compareLoadoutSelector').value;
+
+        if (!baseId || !compareId) {
+        alert("請從上方選單分別選擇「基礎組合」與「對比組合」！");
+        return;
+        }
+
+        const btn = document.getElementById('btnCompareData');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btn.disabled = true;
+
+        try {
+        // 同時發送兩個請求，效能更好
+        const [res1, res2] = await Promise.all([
+        fetch(`/Equipment/GetLoadoutStats?loadoutId=${baseId}`),
+        fetch(`/Equipment/GetLoadoutStats?loadoutId=${compareId}`)
+        ]);
+
+        const baseData = await res1.json();
+        const compareData = await res2.json();
+
+        const stats1 = {
+        hp: baseData.hp || 0, attack: baseData.attack || 0, magicAttack: baseData.magicAttack || 0,
+        pDef: baseData.physicalDefense || baseData.pDef || 0, mDef: baseData.magicDefense || baseData.mDef || 0
+        };
+        const stats2 = {
+        hp: compareData.hp || 0, attack: compareData.attack || 0, magicAttack: compareData.magicAttack || 0,
+        pDef: compareData.physicalDefense || compareData.pDef || 0, mDef: compareData.magicDefense || compareData.mDef || 0
+        };
+
+        // 顯示結果區域並更新為「雙雷達圖對比」
+        document.getElementById('displayArea').classList.remove('d-none');
+        updateRadarChart(stats1, stats2);
+                
+        } catch (err) {
+        console.error("對比載入失敗", err);
+        alert("載入對比資料時發生錯誤。");
+        } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        }
         }
 
         document.getElementById('btnCalculate').addEventListener('click', function() {
