@@ -34,7 +34,8 @@
 
 玩家可以用滑鼠挑選英雄，並在開局、7 等、11 等、15 等分別帶回當輪三選一海克斯。後續階段會連同先前已選海克斯一起判斷，不需要重複輸入裝備。
 
-![AI 推薦介面](docs/images/readme-ai-recommendation.png)
+<img width="1827" height="896" alt="image" src="https://github.com/user-attachments/assets/ebc16f79-090c-4a15-898b-8ce51ead7f30" />
+
 
 ### 將遊戲資料轉成可檢索知識
 
