@@ -13,8 +13,9 @@
 
 它不是單純把問題轉送給 LLM。推薦前會先取得本機 RAG 知識、比對英雄與海克斯關係，並參考玩家收藏或採納過的結果；推薦後則以繁體中文、結構化區塊呈現裝備、海克斯與打法方向。
 
-![彭彭遊戲基地首頁](<img width="1779" height="906" alt="image" src="https://github.com/user-attachments/assets/cd774148-2773-439e-8585-5c5d49692ffd" />
-)
+<img width="1779" height="906" alt="image" src="https://github.com/user-attachments/assets/7e80ac79-ce7a-488c-bf84-b8d62a064c0c" />
+
+
 
 ## 專案成果
 
